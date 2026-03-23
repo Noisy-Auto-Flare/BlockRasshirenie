@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Доступ ограничен</title>
+    <style>
+        body {
+            background-color: #0f0f0f;
+            color: #ff4e45;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: sans-serif;
+            margin: 0;
+            text-align: center;
+        }
+        h1 { font-size: 3rem; margin-bottom: 0; }
+        p { font-size: 1.2rem; color: #e0e0e0; margin-top: 10px; }
+        .timer { font-size: 4rem; font-weight: bold; color: #fff; margin: 20px 0; font-variant-numeric: tabular-nums; }
+        .note { font-size: 0.9rem; color: #666; max-width: 600px;}
+    </style>
+</head>
+<body>
+    <h1>⛔ СТОП</h1>
+    
+    <h2 id="video-title-display" style="color: #aaa; font-size: 1.2rem; margin: 10px 0; max-width: 80%;"></h2>
+
+    <p id="status-text">Лимит исчерпан. Следующий сеанс через:</p>
+    
+    <p class="note">Не закрывайте эту вкладку. Когда таймер истечет, видео включится автоматически.</p>
+
+    <script src="blocked.js"></script>
+</body>
+</html>

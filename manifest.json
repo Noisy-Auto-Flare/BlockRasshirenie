@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Hardcore YouTube Limiter",
+  "version": "3.0",
+  "permissions": [
+    "declarativeNetRequest",
+    "storage",
+    "action",
+    "alarms",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://*.googlevideo.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+     "default_title": "Status"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

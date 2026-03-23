@@ -16,29 +16,28 @@ class BlockedPage {
 
     async init() {
         await this.loadUnlockTime();
-        if (this.unlockTime && this.totalDuration > 0) {
-            this.startTimer();
-        } else {
-            // Если нет unlockTime, значит кулдаун уже истёк - перенаправляем
-            this.checkAndRedirect();
-        }
     }
 
     async loadUnlockTime() {
         try {
-            const data = await new Promise((resolve) => {
-                chrome.storage.local.get(['unlockTime', 'cooldownTimeMinutes'], (result) => resolve(result));
-            });
+            chrome.runtime.sendMessage({ action: 'getTimerState' }, (response) => {
+                if (chrome.runtime.lastError || !response) {
+                    this.redirectToYouTube();
+                    return;
+                }
 
-            if (data.unlockTime && Date.now() < data.unlockTime) {
-                this.unlockTime = parseInt(data.unlockTime);
-                // Вычисляем общую длительность кулдауна в миллисекундах
-                const cooldownMinutes = data.cooldownTimeMinutes || 60;
-                this.totalDuration = cooldownMinutes * 60 * 1000;
-            } else {
-                // Кулдаун истёк, перенаправляем обратно на YouTube
-                this.redirectToYouTube();
-            }
+                if (response.state === 'COOLDOWN' && response.unlockTime && Date.now() < response.unlockTime) {
+                    this.unlockTime = parseInt(response.unlockTime);
+                    // Общая длительность кулдауна (для прогресс-бара)
+                    chrome.storage.local.get(['cooldownTimeMinutes'], (data) => {
+                        const cooldownMinutes = data.cooldownTimeMinutes || 60;
+                        this.totalDuration = cooldownMinutes * 60 * 1000;
+                        this.startTimer();
+                    });
+                } else {
+                    this.redirectToYouTube();
+                }
+            });
         } catch (error) {
             console.error('Ошибка загрузки unlockTime:', error);
             this.redirectToYouTube();

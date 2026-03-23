@@ -88,14 +88,14 @@ class OptionsManager {
 
     async loadAndDisplayState() {
         try {
-            const result = await new Promise((resolve) => {
-                chrome.storage.local.get(['state', 'timeLeft'], (data) => resolve(data));
-            });
+            chrome.runtime.sendMessage({ action: 'getTimerState' }, (response) => {
+                if (chrome.runtime.lastError || !response) return;
 
-            this.state = result.state || 'VIEWING';
-            this.timeLeft = result.timeLeft !== undefined ? result.timeLeft : 0;
-            
-            this.updateStatusCard();
+                this.state = response.state || 'VIEWING';
+                this.timeLeft = response.timeLeft !== undefined ? response.timeLeft : 0;
+                
+                this.updateStatusCard();
+            });
         } catch (error) {
             console.error('Ошибка обновления состояния:', error);
         }
@@ -141,6 +141,9 @@ class OptionsManager {
                 this.showNotification('Ошибка сохранения', 'error');
                 return;
             }
+
+            // Уведомляем background.js об изменении настроек
+            chrome.runtime.sendMessage({ action: 'updateSettings' });
 
             // Обновляем локальное состояние
             this.settings.viewTimeMinutes = viewTime;

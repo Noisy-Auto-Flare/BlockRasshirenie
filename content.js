@@ -5,117 +5,83 @@ class YouTubeContentManager {
         this.isYouTube = window.location.hostname.includes('youtube.com');
         
         if (!this.isYouTube) {
-            return; // Скрипт работает только на YouTube
+            return;
         }
 
+        this.timerElement = null;
         this.init();
     }
 
     init() {
         console.log('YouTube Limiter: Content-скрипт инициализирован');
 
-        // Установка обработчика сообщений от service worker
-        chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-            return this.handleMessage(request, sender, sendResponse);
-        });
+        // Создаем элемент таймера
+        this.createTimerUI();
 
-        // Отслеживаем изменения видимости вкладки для корректной работы таймера
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                console.log('YouTube Limiter: вкладка стала активной');
-            } else {
-                console.log('YouTube Limiter: вкладка неактивна');
-            }
-        });
+        // Проверяем состояние при загрузке
+        this.updateState();
 
-        // Периодическая проверка состояния блокировки (на случай изменений в background)
+        // Периодическая проверка состояния блокировки и обновление таймера
         setInterval(() => {
-            this.checkBlockStatus();
-        }, 5000);
+            this.updateState();
+        }, 1000);
     }
 
-    async handleMessage(request, sender, sendResponse) {
-        switch (request.type) {
-            case 'UNBLOCK_YOUTUBE':
-                // Разблокируем YouTube - ничего делать не нужно, страница уже загружается
-                console.log('YouTube Limiter: разблокировка YouTube');
-                
-                // Запускаем интервал уменьшения времени через background.js
-                chrome.runtime.sendMessage({ action: 'startDecreaseInterval' });
+    createTimerUI() {
+        if (this.timerElement) return;
 
-                sendResponse({ success: true });
-                break;
-
-            case 'BLOCK_YOUTUBE':
-                // Блокируем YouTube - перенаправляем на страницу блокировки
-                console.log('YouTube Limiter: блокировка YouTube');
-                
-                const extensionUrl = chrome.runtime.getURL('blocked.html');
-                window.location.href = extensionUrl;
-                
-                sendResponse({ blocked: true });
-                break;
-
-            case 'REDIRECT_TO_BLOCKED':
-                // Перенаправляем на страницу блокировки
-                console.log('YouTube Limiter: перенаправление на страницу блокировки');
-                
-                const blockedUrl = chrome.runtime.getURL('blocked.html');
-                window.location.href = blockedUrl;
-                
-                sendResponse({ redirected: true });
-                break;
-
-            case 'UPDATE_TIME':
-                // Обновление времени - используем для отладки
-                console.log('YouTube Limiter: время обновлено до', request.timeLeft, 'секунд');
-                
-                // Отправляем время обратно в background.js для уменьшения
-                if (request.timeLeft > 0) {
-                    chrome.runtime.sendMessage({ action: 'decreaseTime' });
-                } else {
-                    console.log('YouTube Limiter: лимит времени просмотра истёк');
-                    
-                    // Очищаем интервал уменьшения времени
-                    clearInterval(this.decreaseInterval);
-
-                    // Перенаправляем на страницу блокировки
-                    const blockedUrl = chrome.runtime.getURL('blocked.html');
-                    window.location.href = blockedUrl;
-                }
-
-                sendResponse({ updated: true });
-                break;
-
-            case 'GET_STATE':
-                // Возвращаем текущее состояние страницы
-                sendResponse({
-                    url: window.location.href,
-                    title: document.title,
-                    isVideoPage: window.location.pathname.includes('/watch/')
-                });
-                break;
-        }
-
-        return true; // Для асинхронной отправки ответов
+        this.timerElement = document.createElement('div');
+        this.timerElement.id = 'yt-limiter-timer';
+        this.timerElement.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 999999;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            display: none;
+        `;
+        document.body.appendChild(this.timerElement);
     }
 
-    async checkBlockStatus() {
-        // Проверяем состояние кулдауна каждые 5 секунд
+    async updateState() {
         try {
-            const data = await new Promise((resolve) => {
-                chrome.storage.local.get(['unlockTime'], (result) => resolve(result));
-            });
-
-            if (data.unlockTime && Date.now() < data.unlockTime) {
-                // Кулдаун активен, но мы всё ещё на YouTube - перенаправляем
-                console.log('YouTube Limiter: обнаружен кулдаун, перенаправление');
+            chrome.runtime.sendMessage({ action: 'getTimerState' }, (response) => {
+                if (chrome.runtime.lastError || !response) {
+                    if (this.timerElement) this.timerElement.style.display = 'none';
+                    return;
+                }
                 
-                const blockedUrl = chrome.runtime.getURL('blocked.html');
-                window.location.href = blockedUrl;
-            }
+                if (response.state === 'COOLDOWN') {
+                    const blockedUrl = chrome.runtime.getURL('blocked.html');
+                    if (window.location.href !== blockedUrl) {
+                        window.location.href = blockedUrl;
+                    }
+                } else if (response.state === 'VIEWING') {
+                    if (this.timerElement) {
+                        const minutes = Math.floor(response.timeLeft / 60);
+                        const seconds = response.timeLeft % 60;
+                        this.timerElement.textContent = `⏳ ${minutes}м ${seconds}с`;
+                        this.timerElement.style.display = 'block';
+                        
+                        // Если времени мало, подсвечиваем красным
+                        if (response.timeLeft < 60) {
+                            this.timerElement.style.background = 'rgba(244, 67, 54, 0.8)';
+                        } else {
+                            this.timerElement.style.background = 'rgba(0, 0, 0, 0.7)';
+                        }
+                    }
+                }
+            });
         } catch (error) {
-            console.error('Ошибка проверки состояния:', error);
+            console.error('Ошибка обновления состояния:', error);
         }
     }
 }

@@ -39,6 +39,9 @@ class TabsManager {
 
         chrome.tabs.onRemoved.addListener(() => this.fetchAndRender());
         chrome.tabs.onCreated.addListener(() => this.fetchAndRender());
+
+        // Обновляем статус каждую секунду
+        setInterval(() => this.updateStatus(), 1000);
     }
 
     async fetchTabs() {
@@ -193,34 +196,30 @@ class TabsManager {
 
     async updateStatus() {
         try {
-            const data = await new Promise((resolve) => {
-                chrome.storage.local.get(['state', 'timeLeft'], (result) => resolve(result));
+            chrome.runtime.sendMessage({ action: 'getTimerState' }, (response) => {
+                if (chrome.runtime.lastError || !response) return;
+
+                const state = response.state || 'VIEWING';
+                const timeLeft = response.timeLeft || 0;
+
+                let statusText = '';
+                
+                if (state === 'VIEWING') {
+                    const minutes = Math.floor(timeLeft / 60);
+                    const seconds = Math.floor(timeLeft % 60);
+                    statusText = `⏱️ ${minutes}м ${seconds}с`;
+                    this.elements.statusText.style.color = '#4CAF50';
+                } else if (state === 'COOLDOWN') {
+                    const minutes = Math.floor(timeLeft / 60);
+                    const seconds = Math.floor(timeLeft % 60);
+                    statusText = `🔒 Блок: ${minutes}м ${seconds}с`;
+                    this.elements.statusText.style.color = '#F44336';
+                }
+
+                this.elements.statusText.textContent = statusText;
             });
-
-            const state = data.state || 'VIEWING';
-            const timeLeft = data.timeLeft || 0;
-
-            let statusText = '';
-            
-            if (state === 'VIEWING') {
-                const minutes = Math.floor(timeLeft / 60);
-                const seconds = Math.floor(timeLeft % 60);
-                statusText = `⏱️ ${minutes} мин ${seconds} сек`;
-                this.elements.statusText.style.color = '#4CAF50';
-            } else if (state === 'COOLDOWN') {
-                const minutes = Math.floor(timeLeft / 60);
-                const seconds = Math.floor(timeLeft % 60);
-                statusText = `🔒 Кулдаун: ${minutes} мин ${seconds} сек`;
-                this.elements.statusText.style.color = '#ff9800';
-            } else {
-                statusText = 'Неактивно';
-                this.elements.statusText.style.color = '#ffffff';
-            }
-
-            this.elements.statusText.textContent = statusText;
         } catch (error) {
             console.error('Ошибка обновления статуса:', error);
-            this.elements.statusText.textContent = 'Ошибка';
         }
     }
 

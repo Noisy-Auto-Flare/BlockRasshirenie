@@ -1,0 +1,55 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Node modules (if any dependencies are added later)
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn.lock
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Build outputs (if using a build process)
+dist/
+build/
+*.map
+
+# Chrome extension debugging files
+.debug
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Logs
+logs/
+*.log
+
+# OS-specific files
+.Trash-*
+.DS_Store
+Desktop.ini
+
+# Backup files
+*.bak
+*.backup
+
+# Compiled JavaScript (if using TypeScript later)
+*.js.map
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Test artifacts
+.junit/

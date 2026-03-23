@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройки - YouTube Limiter</title>
+    <style>
+        :root {
+            --primary-color: #ff0000;
+            --primary-hover: #cc0000;
+            --background-dark: #0f0f0f;
+            --background-card: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #aaaaaa;
+            --border-color: #333333;
+            --disabled-bg: #2a2a2a;
+            --success-color: #4CAF50;
+            --warning-color: #ff9800;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .status-card {
+            background: linear-gradient(135deg, #2d2d2d, #1a1a1a);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-card h3 {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .status-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .settings-card {
+            background-color: var(--background-card);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid var(--border-color);
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .settings-header h2 {
+            font-size: 1.2rem;
+            color: var(--text-primary);
+        }
+
+        .lock-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background-color: rgba(255, 0, 0, 0.1);
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        .lock-indicator.locked {
+            background-color: rgba(255, 152, 0, 0.1);
+            color: var(--warning-color);
+        }
+
+        .lock-icon {
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group:last-of-type {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            background-color: var(--background-dark);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.1);
+        }
+
+        input[type="number"]:disabled {
+            background-color: var(--disabled-bg);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+        }
+
+        .input-suffix {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .info-text {
+            font-size: 0.75rem !important;
+            margin-top: 5px !important;
+            color: #666 !important;
+        }
+
+        .btn-save {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 25px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-save:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 0, 0, 0.3);
+        }
+
+        .btn-save:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .timer-display {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: rgba(255, 152, 0, 0.1);
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+
+        .timer-display.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .timer-display p {
+            color: var(--warning-color);
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .timer-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            font-variant-numeric: tabular-nums;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pulse {
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background-color: var(--success-color);
+        }
+
+        .notification.error {
+            background-color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎬 YouTube Limiter</h1>
+            <p>Настройки ограничения просмотра</p>
+        </header>
+
+        <div class="status-card">
+            <h3>Текущее состояние</h3>
+            <div id="current-state" class="status-value">—</div>
+            <p style="margin-top: 10px; font-size: 0.85rem;">Осталось времени: <span id="time-left-display">--:--</span></p>
+        </div>
+
+        <div class="settings-card">
+            <div class="settings-header">
+                <h2>⚙️ Параметры</h2>
+                <div id="lock-indicator" class="lock-indicator">
+                    <span class="lock-icon">🔓</span>
+                    <span id="lock-status">Редактирование доступно</span>
+                </div>
+            </div>
+
+            <form id="settings-form">
+                <div class="form-group">
+                    <label for="view-time">⏱️ Время просмотра (минуты)</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">▶️</span>
+                        <input 
+                            type="number" 
+                            id="view-time" 
+                            min="1" 
+                            max="180" 
+                            value="30"
+                            disabled
+                        >
+                        <span class="input-suffix">мин</span>
+                    </div>
+                    <p class="info-text">Время, доступное для просмотра в одном сеансе (1-180 мин)</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="cooldown-time">⏳ Кулдаун после просмотра (минуты)</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔋</span>
+                        <input 
+                            type="number" 
+                            id="cooldown-time" 
+                            min="1" 
+                            max="600" 
+                            value="60"
+                            disabled
+                        >
+                        <span class="input-suffix">мин</span>
+                    </div>
+                    <p class="info-text">Время ожидания перед следующим сеансом (1-600 мин)</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="lock-time">🔒 Блокировка настроек (минуты)</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🛡️</span>
+                        <input 
+                            type="number" 
+                            id="lock-time" 
+                            min="1" 
+                            max="60" 
+                            value="5"
+                            disabled
+                        >
+                        <span class="input-suffix">мин</span>
+                    </div>
+                    <p class="info-text">Нельзя менять настройки после сохранения (1-60 мин)</p>
+                </div>
+
+                <button type="submit" id="save-btn" class="btn-save" disabled>
+                    💾 Сохранить настройки
+                </button>
+            </form>
+
+            <div id="timer-display" class="timer-display">
+                <p>⏰ До разблокировки настроек:</p>
+                <div id="lock-timer-value" class="timer-value">00:00</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script src="options.js"></script>
+</body>
+</html>

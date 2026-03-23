@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Limiter - Вкладки</title>
+    <style>
+        :root {
+            --primary-color: #ff0000;
+            --background-dark: #0f0f0f;
+            --background-card: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #aaaaaa;
+            --border-color: #333333;
+            --hover-bg: #252525;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-dark);
+            color: var(--text-primary);
+            width: 320px;
+            min-height: 150px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff0000, #990000);
+            padding: 15px;
+            text-align: center;
+        }
+
+        .header h2 {
+            font-size: 1rem;
+            color: white;
+            margin-bottom: 3px;
+        }
+
+        .header .status {
+            font-size: 0.75rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 10px;
+        }
+
+        .tabs-list {
+            list-style: none;
+        }
+
+        .tab-item {
+            background-color: var(--background-card);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .tab-item:hover {
+            background-color: var(--hover-bg);
+            transform: translateX(2px);
+        }
+
+        .tab-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .tab-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .tab-title {
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            margin-bottom: 3px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tab-url {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tab-actions {
+            display: flex;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+
+        .btn-tab {
+            background-color: var(--border-color);
+            border: none;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .btn-tab:hover {
+            background-color: var(--primary-color);
+        }
+
+        .btn-close:hover {
+            background-color: #ff4444 !important;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .empty-text {
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stats-bar {
+            background-color: var(--background-card);
+            padding: 8px 15px;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stats-bar span strong {
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>🎬 YouTube Limiter</h2>
+        <div class="status" id="status-text">Загрузка...</div>
+    </div>
+
+    <div class="content">
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p style="font-size: 0.85rem; color: #888;">Поиск вкладок...</p>
+        </div>
+
+        <ul id="tabs-list" class="tabs-list" style="display: none;"></ul>
+
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <div class="empty-icon">📺</div>
+            <p class="empty-text">Нет открытых вкладок YouTube</p>
+        </div>
+    </div>
+
+    <div id="stats-bar" class="stats-bar" style="display: none;">
+        <span>Всего: <strong id="total-tabs">0</strong></span>
+        <span>Активных: <strong id="active-tabs">0</strong></span>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

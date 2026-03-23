@@ -1,77 +1,133 @@
-// blocked.js
+// blocked.js - Логика заблокированной страницы с правильным таймером
 
-const params = new URLSearchParams(window.location.search);
-const returnUrl = params.get('returnTo');
-// Получаем заголовок и декодируем его
-const videoTitle = params.get('title'); 
-
-let isWaitingForFocus = false;
-
-// СРАЗУ ЖЕ УСТАНАВЛИВАЕМ НАЗВАНИЕ ВКЛАДКИ
-if (videoTitle && videoTitle !== "undefined") {
-    document.title = "⏸️ " + videoTitle;
-} else {
-    document.title = "⏸️ YouTube (Пауза)";
-}
-
-function updateTimer() {
-    chrome.storage.local.get(['state', 'unlockTime'], (data) => {
+class BlockedPage {
+    constructor() {
+        this.timerElement = document.getElementById('timer');
+        this.progressFill = document.getElementById('progress-fill');
         
-        const timerElement = document.getElementById('timer');
-        const statusElement = document.getElementById('status-text');
-        const titleElement = document.getElementById('video-title-display'); // Элемент для отображения названия на странице
+        this.unlockTime = null;
+        this.totalDuration = 0;
+        
+        // Привязка методов
+        this.updateTimerDisplay = this.updateTimerDisplay.bind(this);
 
-        // Отображаем название и на самой черной странице (для красоты)
-        if (titleElement && videoTitle) {
-            titleElement.innerText = videoTitle;
+        this.init();
+    }
+
+    async init() {
+        await this.loadUnlockTime();
+        if (this.unlockTime && this.totalDuration > 0) {
+            this.startTimer();
+        } else {
+            // Если нет unlockTime, значит кулдаун уже истёк - перенаправляем
+            this.checkAndRedirect();
         }
+    }
 
-        // --- ЛОГИКА РАЗБЛОКИРОВКИ ---
-        if (data.state === 'VIEWING') {
-            if (document.visibilityState === 'visible') {
-                performRedirect(statusElement);
+    async loadUnlockTime() {
+        try {
+            const data = await new Promise((resolve) => {
+                chrome.storage.local.get(['unlockTime', 'cooldownTimeMinutes'], (result) => resolve(result));
+            });
+
+            if (data.unlockTime && Date.now() < data.unlockTime) {
+                this.unlockTime = parseInt(data.unlockTime);
+                // Вычисляем общую длительность кулдауна в миллисекундах
+                const cooldownMinutes = data.cooldownTimeMinutes || 60;
+                this.totalDuration = cooldownMinutes * 60 * 1000;
             } else {
-                if (!isWaitingForFocus) {
-                    isWaitingForFocus = true;
-                    timerElement.innerText = "ГОТОВО";
-                    statusElement.innerText = "Кликните для просмотра";
-                    // Меняем заголовок вкладки на призывающий
-                    document.title = "▶️ ЖМИТЕ СЮДА! " + (videoTitle || "");
-                    
-                    document.addEventListener("visibilitychange", () => {
-                        if (document.visibilityState === 'visible') {
-                            performRedirect(statusElement);
-                        }
-                    }, { once: true });
-                }
+                // Кулдаун истёк, перенаправляем обратно на YouTube
+                this.redirectToYouTube();
             }
-            return;
+        } catch (error) {
+            console.error('Ошибка загрузки unlockTime:', error);
+            this.redirectToYouTube();
+        }
+    }
+
+    startTimer() {
+        // Обновляем таймер каждую секунду
+        const timerInterval = setInterval(() => {
+            if (!this.unlockTime || Date.now() >= this.unlockTime) {
+                clearInterval(timerInterval);
+                this.redirectToYouTube();
+                return;
+            }
+
+            const remainingMs = this.unlockTime - Date.now();
+            this.updateTimerDisplay(remainingMs);
+
+        }, 1000);
+
+        // Первое обновление сразу
+        const remainingMs = this.unlockTime - Date.now();
+        this.updateTimerDisplay(remainingMs);
+    }
+
+    updateTimerDisplay(ms) {
+        if (ms <= 0) {
+            ms = 0;
         }
 
-        // --- ЛОГИКА ТАЙМЕРА ---
-        if (data.unlockTime) {
-            const now = Date.now();
-            const msLeft = data.unlockTime - now;
+        // Переводим миллисекунды в часы, минуты и секунды
+        const hours = Math.floor(ms / 3600000);
+        const minutes = Math.floor((ms % 3600000) / 60000);
+        const seconds = Math.floor((ms % 60000) / 1000);
 
-            if (msLeft > 0) {
-                const minutes = Math.floor(msLeft / 60000);
-                const seconds = Math.floor((msLeft % 60000) / 1000);
-                timerElement.innerText = `${minutes}м ${seconds < 10 ? '0' : ''}${seconds}с`;
+        // Форматируем отображение
+        let displayText;
+        if (hours > 0) {
+            displayText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        } else {
+            displayText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        this.timerElement.textContent = displayText;
+
+        // Обновляем прогресс-бар
+        const progressPercent = ((this.totalDuration - ms) / this.totalDuration) * 100;
+        this.progressFill.style.width = `${progressPercent}%`;
+
+        // Меняем стиль таймера в зависимости от оставшегося времени
+        this.timerElement.className = 'timer';
+        if (ms < 60000) {
+            // Менее минуты - danger состояние
+            this.timerElement.classList.add('danger');
+        } else if (ms < 300000) {
+            // Менее 5 минут - warning состояние
+            this.timerElement.classList.add('warning');
+        }
+    }
+
+    async checkAndRedirect() {
+        try {
+            const data = await new Promise((resolve) => {
+                chrome.storage.local.get(['unlockTime'], (result) => resolve(result));
+            });
+
+            if (!data.unlockTime || Date.now() >= data.unlockTime) {
+                this.redirectToYouTube();
+            }
+        } catch (error) {
+            console.error('Ошибка проверки:', error);
+        }
+    }
+
+    redirectToYouTube() {
+        // Получаем последнюю открытую YouTube вкладку или создаем новую
+        chrome.tabs.query({ url: '*youtube.com*' }, (tabs) => {
+            if (tabs.length > 0) {
+                // Переходим на первую найденную YouTube вкладку
+                chrome.tabs.update(tabs[0].id, { active: true });
             } else {
-                timerElement.innerText = "00м 00с";
+                // Создаем новую вкладку с YouTube
+                chrome.tabs.create({ url: 'https://www.youtube.com' });
             }
-        }
-    });
-}
-
-function performRedirect(element) {
-    element.innerText = "Запуск...";
-    if (returnUrl && returnUrl !== "undefined" && returnUrl !== "null") {
-        window.location.href = decodeURIComponent(returnUrl);
-    } else {
-        window.location.href = "https://www.youtube.com";
+        });
     }
 }
 
-setInterval(updateTimer, 1000);
-document.addEventListener('DOMContentLoaded', updateTimer);
+// Инициализация после загрузки DOM
+document.addEventListener('DOMContentLoaded', () => {
+    window.blockedPage = new BlockedPage();
+});

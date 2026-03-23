@@ -1,35 +1,198 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <meta charset="utf-8">
-    <title>Доступ ограничен</title>
+    <meta charset="UTF-8">
+    <title>⏸️ Пауза — YouTube Limiter</title>
     <style>
-        body {
-            background-color: #0f0f0f;
-            color: #ff4e45;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            font-family: sans-serif;
+        * {
             margin: 0;
-            text-align: center;
+            padding: 0;
+            box-sizing: border-box;
         }
-        h1 { font-size: 3rem; margin-bottom: 0; }
-        p { font-size: 1.2rem; color: #e0e0e0; margin-top: 10px; }
-        .timer { font-size: 4rem; font-weight: bold; color: #fff; margin: 20px 0; font-variant-numeric: tabular-nums; }
-        .note { font-size: 0.9rem; color: #666; max-width: 600px;}
+
+        body, html {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #0f0f0f 100%);
+            position: relative;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 10px,
+                    rgba(255, 255, 255, 0.02) 10px,
+                    rgba(255, 255, 255, 0.02) 20px
+                );
+            pointer-events: none;
+        }
+
+        .content {
+            text-align: center;
+            z-index: 1;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .icon {
+            font-size: 8rem;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #ff0000;
+            margin-bottom: 15px;
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+        }
+
+        p.subtitle {
+            font-size: 1.2rem;
+            color: #aaaaaa;
+            margin-bottom: 40px;
+        }
+
+        .timer-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px 60px;
+            display: inline-block;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .timer-label {
+            font-size: 0.9rem;
+            color: #888888;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .timer {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #ffffff;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 3px;
+            text-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+        }
+
+        .timer.warning {
+            color: #ff9800;
+            animation: blink 1s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .timer.danger {
+            color: #ff4444;
+            animation: shake 0.5s ease-in-out infinite;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .progress-bar {
+            width: 300px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin: 25px auto 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #ff6600);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .info {
+            margin-top: 40px;
+            font-size: 0.85rem;
+            color: #666666;
+        }
+
+        .settings-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: rgba(255, 0, 0, 0.1);
+            color: #ff6666;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .settings-link:hover {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff9999;
+        }
     </style>
 </head>
 <body>
-    <h1>⛔ СТОП</h1>
-    
-    <h2 id="video-title-display" style="color: #aaa; font-size: 1.2rem; margin: 10px 0; max-width: 80%;"></h2>
+    <div class="container">
+        <div class="content">
+            <div class="icon">⏸️</div>
+            <h1>Время вышло!</h1>
+            <p class="subtitle">Вы достигли лимита просмотра за сегодня.</p>
+            
+            <div class="timer-container">
+                <div class="timer-label">До разблокировки:</div>
+                <p class="timer" id="timer">00:00</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
 
-    <p id="status-text">Лимит исчерпан. Следующий сеанс через:</p>
-    
-    <p class="note">Не закрывайте эту вкладку. Когда таймер истечет, видео включится автоматически.</p>
+            <p class="info">Это ограничение нельзя обойти. Вернитесь позже.</p>
+            
+            <a href="chrome://extensions/?id=njhjebmdhnjnblhheojnbbhgahbgfbcg" target="_blank" class="settings-link">
+                ⚙️ Настройки расширения
+            </a>
+        </div>
+    </div>
 
     <script src="blocked.js"></script>
 </body>
